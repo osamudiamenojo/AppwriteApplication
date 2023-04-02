@@ -1,79 +1,86 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from appwrite.client import Client, AppwriteException
 from appwrite.services.account import  Account
 from dotenv import load_dotenv
-import os
+from repository import client
+from services import *
+
 
 
 load_dotenv()
 
-
 app = Flask(__name__)
 
-# Initialize Appwrite client and database service
-client = Client()
-client.set_endpoint(os.environ['APPWRITE_ENDPOINT'])
-client.set_project(os.environ['APPWRITE_PROJECT'])
-client.set_key(os.environ['APPWRITE_API_KEY'])
-account_service = Account(client)
 
 
-# Define your web application's routes and views
 @app.route('/')
 def index():
-    return render_template('index.html')
+
+    return render_template("home.html")
 
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        # Get user input from the form
+        # Get request data
         name = request.form['name']
         email = request.form['email']
         password = request.form['password']
-        
-        # Check if email ends with kibo.school
-        if not email.endswith('kibo.school'):
-            flash('Please use a valid kibo.school email address.', 'error')
-            return redirect(url_for('signup'))
-        
-        # Create a new account in Appwrite
-        try:
-            response = account_service.create(email=email, password=password, name=name)
-            user_id = response["$id"]
-            # Redirect to the login page
-            return redirect(url_for('login'))  
-        except AppwriteException as e:
-            # Handle Appwrite errors
-            error_message = e.message
-            flash(error_message, "error")
-        
-    # Render the sign-up page
-    return render_template('signup.html')
 
+        # Add student to the database
+        student = add_student(name, email, password)
+        return render_template('signup_success.html', student=student)
+    else:
+        return render_template('signup.html')
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Get request data
+        email = request.form['email']
+        password = request.form['password']
 
-# @app.route('/data', methods=['GET', 'POST'])
-# def data():
-#     if request.method == 'POST':
-#         # Retrieve data from form submission
-#         name = request.form['name']
-#         email = request.form['email']
-#         message = request.form['message']
-        
-#         # Save data to Appwrite database collection
-#         database.create_document(
-#             collection_id='COLLECTION_ID', # Replace COLLECTION_ID with the ID of your Appwrite database collection
-#             data={'name': name, 'email': email, 'message': message}
-#         )
-        
-#         return render_template('thanks.html')
-#     else:
-#         # Retrieve data from Appwrite database collection
-#         result = database.list_documents('COLLECTION_ID')
-        
-#         return render_template('data.html', result=result['documents'])
+        # Check if email and password are valid
+        # You can implement your own authentication logic here
+        # For example, you can check if the email and password match an existing student document
+        # If the email and password are valid, you can return a JWT token for authentication
+        # For simplicity, this example just renders a success message
+        return render_template('login_success.html')
+    else:
+        return render_template('login.html')
 
-# Run the Flask application
+@app.route('/studygroups', methods=['GET', 'POST'])
+def create_studygroup():
+    if request.method == 'POST':
+        # Get request data
+        name = request.form['name']
+        description = request.form['description']
+        member_ids = request.form.getlist('member_ids')
+
+        # Add study group to the database
+        studygroup = add_studygroup(name, description, member_ids)
+        return render_template('studygroup_success.html', studygroup=studygroup)
+    else:
+        students = get_all_students()
+        return render_template('create_studygroup.html', students=students)
+
+@app.route('/students/<student_id>', methods=['GET'])
+def get_student_info(student_id):
+    # Get student information from the database
+    student = get_student(student_id)
+    if student:
+        return render_template('student.html', student=student)
+    else:
+        return render_template('student_not_found.html')
+
+@app.route('/studygroups/<studygroup_id>', methods=['GET'])
+def get_studygroup_info(studygroup_id):
+    # Get study group information from the database
+    studygroup = get_studygroup(studygroup_id)
+    if studygroup:
+        return render_template('studygroup.html', studygroup=studygroup)
+    else:
+        return render_template('studygroup_not_found.html')
+    
 if __name__ == '__main__':
     app.run(debug=True)
