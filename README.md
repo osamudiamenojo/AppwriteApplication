@@ -21,8 +21,8 @@ Your app should be running on port 5000 if you have your appwrite variables set 
 
 This App has just two models having a one-to-many relationship and make use of the appwrite database: 
 - **Users** :Table for saving users. One user can have 0 or many tasks
-- **Studygroups**- Table for saving tasks of users. 
+- **Studygroups**- Table for saving groups of students. 
 
 
 ## Hosting 
-This app is hosted on render and can be accessed from this link [here](https://activity-log.onrender.com/)
+This app is hosted on render and can be accessed from this link [here](https://studygang.onrender.com)
